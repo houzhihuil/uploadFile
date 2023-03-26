@@ -6,9 +6,8 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.Part;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -17,46 +16,7 @@ import java.nio.file.Paths;
 public class FileUploadController extends HttpServlet {
 
     @Override
-   /* protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        // Set the maximum allowed size of uploaded files
-        long maxFileSize = 1024 * 1024 * 10; // 10MB
 
-        // Set the directory used to store uploaded files
-        String uploadDir = "/images";
-
-        // Check if the request contains a file
-        for (Part part : request.getParts()) {
-            String fileName = extractFileName(part);
-
-            // If the file name is empty, skip this iteration
-            if (fileName == null || fileName.isEmpty()) {
-                continue;
-            }
-
-            // Check if the file size is less than or equal to the allowed maximum
-            if (part.getSize() > maxFileSize) {
-                request.setAttribute("message", "The file " + fileName + " exceeds the maximum allowed size.");
-                request.getRequestDispatcher("error.jsp").forward(request, response);
-                return;
-            }
-
-            // Create a file to store the uploaded file
-            File file = new File(uploadDir + File.separator + fileName);
-
-            // Copy the contents of the uploaded file to the new file
-            InputStream inputStream = part.getInputStream();
-            file.getParentFile().mkdirs();
-            file.createNewFile();
-            java.nio.file.Files.copy(inputStream, file.toPath());
-
-            // Set a success message
-            request.setAttribute("message", "File uploaded successfully!");
-        }
-
-        // Forward to a success page
-        request.getRequestDispatcher("success.jsp").forward(request, response);
-    }
-*/
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         // Get the file part from the request
         Part filePart = request.getPart("file");
@@ -64,7 +24,15 @@ public class FileUploadController extends HttpServlet {
         // Get the filename
         String fileName = extractFileName(filePart);
         // Get the path to the "images" directory
-        String imagePath = request.getServletContext().getRealPath("/images");
+         String imagePath = request.getServletContext().getRealPath("/images");
+
+
+        String basePath = request.getServletContext().getRealPath("/");
+        String uploadPath = Paths.get(basePath, "uploads").toString();
+        System.out.println("********");
+
+        System.out.println(basePath);
+        System.out.println(uploadPath);
 
         // Create a Path object for the file
         Path filePath = Paths.get(imagePath, fileName);
@@ -75,10 +43,30 @@ public class FileUploadController extends HttpServlet {
             return;
         }
 
-        // Copy the file to the images directory
+        // Copy the file to the images 2 directories
+
         try (InputStream input = filePart.getInputStream()) {
             Files.copy(input, filePath);
+
+            // Reset the input stream to the beginning of the file
+            input.reset();
+
+            String filePath2 = "C:\\Users\\houzh\\IdeaProjects\\uploadFile\\src\\main\\webapp\\images\\";
+            Path path2 = Paths.get(filePath2);
+
+            // Create the images directory if it does not exist
+            Files.createDirectories(path2);
+
+            try (OutputStream output = new FileOutputStream(filePath2 + filePart.getSubmittedFileName())) {
+                byte[] buffer = new byte[1024];
+                int bytesRead;
+                while ((bytesRead = input.read(buffer)) != -1) {
+                    output.write(buffer, 0, bytesRead);
+                }
+            }
         }
+
+
 
         // Set the content type and response message
         response.setContentType("text/plain");
@@ -94,7 +82,20 @@ public class FileUploadController extends HttpServlet {
                 return element.substring(element.indexOf('=') + 1).trim().replace("\"", "");
             }
         }
-
         return null;
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
